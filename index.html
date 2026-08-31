@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador e Lançador de Notas - Quiz Escolar</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1f4e78;
+            --primary-dark: #143350;
+            --accent: #2e7d32;
+            --bg-light: #f8fafc;
+            --card-bg: #ffffff;
+            --border: #e2e8f0;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            padding: 24px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 24px 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* Área de Importação de Arquivo */
+        .upload-section {
+            background: var(--card-bg);
+            border: 2px dashed #cbd5e1;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 24px;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        .upload-section:hover, .upload-section.dragover {
+            border-color: var(--primary);
+            background-color: #f1f5f9;
+        }
+
+        .upload-btn-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .btn-upload {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-upload:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .file-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-info {
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Controles e Filtros */
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .control-group label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        select, input {
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(31, 78, 120, 0.15);
+        }
+
+        input[type="number"] {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 16px;
+            background-color: #fffbeb;
+            border-color: #fde68a;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            padding: 18px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        .kpi-card .val {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 4px;
+        }
+
+        .kpi-card .lbl {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .actions-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        /* Tabela */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        thead {
+            background-color: #f1f5f9;
+            border-bottom: 2px solid var(--border);
+        }
+
+        th {
+            padding: 12px 16px;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        th:hover {
+            background-color: #e2e8f0;
+            color: var(--text-dark);
+        }
+
+        th .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 11px;
+            opacity: 0.6;
+        }
+
+        th.active-sort {
+            color: var(--primary);
+            background-color: #e2e8f0;
+        }
+
+        th.active-sort .sort-icon {
+            opacity: 1;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge-email {
+            font-family: monospace;
+            background: #eff6ff;
+            color: #1e40af;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: 1px solid #bfdbfe;
+        }
+
+        .grade-highlight {
+            font-weight: bold;
+            font-size: 15px;
+            color: var(--primary);
+        }
+
+        .no-data {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+            .upload-section, .controls-grid, .actions-bar, header p {
+                display: none !important;
+            }
+            header {
+                background: none;
+                color: black;
+                padding: 0 0 16px 0;
+                border-bottom: 2px solid black;
+            }
+            header h1 {
+                font-size: 20px;
+            }
+            .table-container {
+                border: none;
+                box-shadow: none;
+            }
+            th, td {
+                padding: 8px 10px;
+                border-bottom: 1px solid #ccc;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Painel Dinâmico do Professor - Quiz Escolar</h1>
+        <p>Importe arquivos Excel (.xlsx) ou CSV, filtre por componente, ajuste o peso da nota e ordene por qualquer coluna.</p>
+    </header>
+
+    <div class="upload-section" id="dropZone">
+        <div style="font-size: 28px; margin-bottom: 8px;">📁</div>
+        <div style="font-weight: 600; font-size: 16px; color: var(--text-dark);">
+            Arraste e solte seu arquivo aqui ou clique para selecionar
+        </div>
+        <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">
+            Suporta planilhas Excel (<strong>.xlsx</strong>) e arquivos CSV (<strong>.csv</strong>)
+        </div>
+        <div class="upload-btn-wrapper">
+            <button class="btn-upload">📂 Selecionar Arquivo do Computador</button>
+            <input type="file" id="fileInput" class="file-input" accept=".xlsx, .xls, .csv">
+        </div>
+        <div class="file-info" id="fileInfo">Nenhum arquivo carregado ainda.</div>
+    </div>
+
+    <div class="controls-grid">
+        <div class="control-group" style="grid-column: span 2;">
+            <label for="selectComponent">Componente Curricular (Disciplina)</label>
+            <select id="selectComponent" onchange="applyFiltersAndSort()">
+                <option value="ALL">-- Todos os Componentes --</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="inputMaxGrade">Nota Máxima (Peso)</label>
+            <input type="number" id="inputMaxGrade" value="10.0" step="0.5" min="0" max="100" oninput="applyFiltersAndSort()">
+        </div>
+
+        <div class="control-group">
+            <label for="inputSearch">Buscar por Email ou Nome</label>
+            <input type="text" id="inputSearch" placeholder="Ex: email@escola.pr.gov.br" oninput="applyFiltersAndSort()">
+        </div>
+
+        <div class="control-group">
+            <label for="selectSortColumn">Classificar por Coluna</label>
+            <select id="selectSortColumn" onchange="applyFiltersAndSort()">
+                <option value="nome">Nome do Jogador</option>
+                <option value="email">Email do Jogador</option>
+                <option value="componente">Componente Curricular</option>
+                <option value="media">Média de Acerto (%)</option>
+                <option value="nota_calc">Nota Calculada</option>
+            </select>
+        </div>
+
+        <div class="control-group">
+            <label for="selectSortOrder">Ordem da Classificação</label>
+            <select id="selectSortOrder" onchange="applyFiltersAndSort()">
+                <option value="asc">Crescente (A-Z / Menor para Maior)</option>
+                <option value="desc">Decrescente (Z-A / Maior para Menor)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="lbl">Estudantes Encontrados</div>
+            <div class="val" id="kpiCount">0</div>
+        </div>
+        <div class="kpi-card">
+            <div class="lbl">Média de Acerto da Turma</div>
+            <div class="val" id="kpiAvgPct">0.0%</div>
+        </div>
+        <div class="kpi-card">
+            <div class="lbl">Nota Média Calculada</div>
+            <div class="val" id="kpiAvgScore">0.00</div>
+        </div>
+        <div class="kpi-card">
+            <div class="lbl">Alunos com Acerto ≥ 80%</div>
+            <div class="val" id="kpiPassPct">0.0%</div>
+        </div>
+    </div>
+
+    <div class="actions-bar">
+        <div style="font-size: 13px; color: var(--text-muted); font-weight: 500;">
+            💡 Clique no cabeçalho de qualquer coluna na tabela para alterar a ordenação rapidamente.
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="exportCSV()">📥 Baixar Relatório (CSV)</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th onclick="setSortFromHeader('componente')" id="th-componente">
+                        Componente <span class="sort-icon">↕</span>
+                    </th>
+                    <th onclick="setSortFromHeader('email')" id="th-email">
+                        Email do Jogador (ID) <span class="sort-icon">↕</span>
+                    </th>
+                    <th onclick="setSortFromHeader('nome')" id="th-nome">
+                        Nome do Jogador <span class="sort-icon">↕</span>
+                    </th>
+                    <th style="text-align: center;">
+                        Jogos (Atrib/Tent)
+                    </th>
+                    <th style="text-align: right;" onclick="setSortFromHeader('media')" id="th-media">
+                        Média de Acerto <span class="sort-icon">↕</span>
+                    </th>
+                    <th style="text-align: right;" onclick="setSortFromHeader('nota_calc')" id="th-nota_calc">
+                        Nota Calculada <span class="sort-icon">↕</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
+        <div id="noDataMsg" class="no-data">
+            Nenhum arquivo carregado. Por favor, importe uma planilha usando a área de upload acima.
+        </div>
+    </div>
+</div>
+
+<script>
+    let rawData = [];
+    let sortColumn = 'nome';
+    let sortOrder = 'asc';
+
+    // Event listeners para upload e drag & drop
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+
+    fileInput.addEventListener('change', handleFileSelect);
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect();
+        }
+    });
+
+    function handleFileSelect() {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        document.getElementById('fileInfo').innerHTML = `📄 <strong>${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB) - Carregando...`;
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                processImportedData(jsonRows, file.name);
+            } catch (err) {
+                alert("Erro ao ler o arquivo! Certifique-se de que é um arquivo Excel (.xlsx) ou CSV válido.");
+                console.error(err);
+                document.getElementById('fileInfo').textContent = "Erro ao carregar o arquivo.";
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+
+    function normalizeHeaderName(key) {
+        return key.toString().trim().toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function processImportedData(jsonRows, fileName) {
+        rawData = [];
+        const uniqueComponents = new Set();
+
+        jsonRows.forEach(row => {
+            let comp = "", atrib = 0, nome = "", email = "", tent = 0, media = 0, notaOrig = 0;
+
+            // Mapeamento preciso e prioritário das colunas
+            Object.keys(row).forEach(key => {
+                const k = normalizeHeaderName(key);
+                let val = row[key];
+
+                // 1. Média de acerto (Identificar primeiro para evitar que 'jogador' seja confundido com e-mail)
+                if (k.includes("media") || k.includes("acerto") || k.includes("%")) {
+                    if (typeof val === 'string') val = val.replace(',', '.').replace('%', '');
+                    media = parseFloat(val) || 0;
+                }
+                // 2. Jogos tentados
+                else if (k.includes("tentad")) {
+                    tent = parseInt(val) || 0;
+                }
+                // 3. Jogos atribuídos
+                else if (k.includes("atribu")) {
+                    atrib = parseInt(val) || 0;
+                }
+                // 4. Nome
+                else if (k.includes("nome") || k.includes("aluno") || k.includes("estudante")) {
+                    nome = String(val).trim();
+                }
+                // 5. Componente / Disciplina
+                else if (k.includes("componente") || k.includes("disciplina") || k.includes("materia")) {
+                    comp = String(val).trim();
+                }
+                // 6. Email / ID
+                else if (k.includes("email") || k.includes("e-mail") || k.includes("login") || k.includes("usuario") || (k.includes("jogado") && !k.includes("jogador"))) {
+                    email = String(val).trim();
+                }
+                // Fallback de email caso o cabeçalho seja exatamente "email do jogador" ou similar
+                else if (!email && (k.includes("email") || k.includes("jogado"))) {
+                    email = String(val).trim();
+                }
+                // 7. Nota original
+                else if (k.includes("nota") || k.includes("pontua")) {
+                    if (typeof val === 'string') val = val.replace(',', '.');
+                    notaOrig = parseFloat(val) || 0;
+                }
+            });
+
+            // Ajuste de escala da média (se estiver em formato percentual 87.5%, converte para 0.875)
+            if (media > 1 && media <= 100) media = media / 100;
+
+            if (!nome) nome = "Não Informado";
+
+            if (email || comp || nome !== "Não Informado") {
+                rawData.push({
+                    componente: comp,
+                    email: email,
+                    nome: nome,
+                    atribuidos: atrib,
+                    tentados: tent,
+                    media: media,
+                    nota_orig: notaOrig
+                });
+
+                if (comp) uniqueComponents.add(comp);
+            }
+        });
+
+        // Atualizar Dropdown de Componentes
+        const selectComp = document.getElementById('selectComponent');
+        selectComp.innerHTML = '<option value="ALL">-- Todos os Componentes --</option>';
+
+        Array.from(uniqueComponents).sort().forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            selectComp.appendChild(opt);
+        });
+
+        document.getElementById('fileInfo').innerHTML = `✅ <strong>${fileName}</strong> carregado com sucesso! (<strong>${rawData.length}</strong> registros encontrados)`;
+
+        applyFiltersAndSort();
+    }
+
+    function setSortFromHeader(col) {
+        if (sortColumn === col) {
+            sortOrder = (sortOrder === 'asc') ? 'desc' : 'asc';
+        } else {
+            sortColumn = col;
+            sortOrder = 'asc';
+        }
+
+        document.getElementById('selectSortColumn').value = sortColumn;
+        document.getElementById('selectSortOrder').value = sortOrder;
+
+        applyFiltersAndSort();
+    }
+
+    function applyFiltersAndSort() {
+        if (rawData.length === 0) return;
+
+        const compVal = document.getElementById('selectComponent').value;
+        const maxGrade = parseFloat(document.getElementById('inputMaxGrade').value) || 0;
+        const searchVal = document.getElementById('inputSearch').value.toLowerCase().trim();
+
+        sortColumn = document.getElementById('selectSortColumn').value;
+        sortOrder = document.getElementById('selectSortOrder').value;
+
+        // 1. Filtrar
+        let filtered = rawData.filter(item => {
+            const matchComp = (compVal === 'ALL') || (item.componente === compVal);
+            const matchSearch = item.email.toLowerCase().includes(searchVal) || 
+                                item.nome.toLowerCase().includes(searchVal);
+            return matchComp && matchSearch;
+        });
+
+        // Calcular nota_calc temporária para permitir ordenação por ela
+        filtered.forEach(item => {
+            item.nota_calc = item.media * maxGrade;
+        });
+
+        // 2. Classificar (Ordenar)
+        filtered.sort((a, b) => {
+            let valA = a[sortColumn];
+            let valB = b[sortColumn];
+
+            if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            }
+
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // Atualizar estilos dos cabeçalhos da tabela
+        document.querySelectorAll('th[id^="th-"]').forEach(th => {
+            th.classList.remove('active-sort');
+            const icon = th.querySelector('.sort-icon');
+            if (icon) icon.textContent = '↕';
+        });
+
+        const activeTh = document.getElementById(`th-${sortColumn}`);
+        if (activeTh) {
+            activeTh.classList.add('active-sort');
+            const icon = activeTh.querySelector('.sort-icon');
+            if (icon) icon.textContent = (sortOrder === 'asc') ? '↑' : '↓';
+        }
+
+        renderTableAndKPIs(filtered, maxGrade);
+    }
+
+    function renderTableAndKPIs(data, maxGrade) {
+        const tbody = document.getElementById('tableBody');
+        const noData = document.getElementById('noDataMsg');
+        tbody.innerHTML = '';
+
+        if (data.length === 0) {
+            noData.style.display = 'block';
+            noData.textContent = 'Nenhum registro encontrado para os filtros selecionados.';
+            document.getElementById('kpiCount').textContent = '0';
+            document.getElementById('kpiAvgPct').textContent = '0.0%';
+            document.getElementById('kpiAvgScore').textContent = '0.00';
+            document.getElementById('kpiPassPct').textContent = '0.0%';
+            return;
+        } else {
+            noData.style.display = 'none';
+        }
+
+        let sumPct = 0;
+        let sumScore = 0;
+        let highAchievers = 0;
+
+        data.forEach(item => {
+            const calcGrade = item.nota_calc;
+            sumPct += item.media;
+            sumScore += calcGrade;
+            if (item.media >= 0.8) highAchievers++;
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-size: 12px; color: #475569;">${item.componente}</td>
+                <td><span class="badge-email">${item.email}</span></td>
+                <td>${item.nome}</td>
+                <td style="text-align: center;">${item.atribuidos} / ${item.tentados}</td>
+                <td style="text-align: right; font-weight: 500;">${(item.media * 100).toFixed(1)}%</td>
+                <td style="text-align: right;" class="grade-highlight">${calcGrade.toFixed(2)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // KPIs
+        const count = data.length;
+        const avgPct = sumPct / count;
+        const avgScore = sumScore / count;
+        const passPct = (highAchievers / count) * 100;
+
+        document.getElementById('kpiCount').textContent = count;
+        document.getElementById('kpiAvgPct').textContent = (avgPct * 100).toFixed(1) + '%';
+        document.getElementById('kpiAvgScore').textContent = avgScore.toFixed(2);
+        document.getElementById('kpiPassPct').textContent = passPct.toFixed(1) + '%';
+    }
+
+    function exportCSV() {
+        if (rawData.length === 0) {
+            alert("Nenhum dado para exportar!");
+            return;
+        }
+
+        const compVal = document.getElementById('selectComponent').value;
+        const maxGrade = parseFloat(document.getElementById('inputMaxGrade').value) || 0;
+        const searchVal = document.getElementById('inputSearch').value.toLowerCase().trim();
+
+        let filtered = rawData.filter(item => {
+            const matchComp = (compVal === 'ALL') || (item.componente === compVal);
+            const matchSearch = item.email.toLowerCase().includes(searchVal) || item.nome.toLowerCase().includes(searchVal);
+            return matchComp && matchSearch;
+        });
+
+        filtered.sort((a, b) => {
+            let valA = a[sortColumn];
+            let valB = b[sortColumn];
+            if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = valB.toLowerCase();
+            }
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        let csvContent = "\uFEFF"; // BOM para garantir acentuação correta no Excel
+        csvContent += "Componente,Email do Jogador,Nome do Jogador,Jogos Atribuídos,Jogos Tentados,Média de Acerto (%),Nota Calculada\n";
+
+        filtered.forEach(item => {
+            const calcGrade = (item.media * maxGrade).toFixed(2);
+            const mediaPct = (item.media * 100).toFixed(1) + "%";
+            const rowStr = `"${item.componente}","${item.email}","${item.nome}",${item.atribuidos},${item.tentados},"${mediaPct}",${calcGrade}`;
+            csvContent += rowStr + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `relatorio_notas_${compVal === 'ALL' ? 'geral' : compVal.replace(/[^a-z0-9]/gi, '_')}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+</body>
+</html>
