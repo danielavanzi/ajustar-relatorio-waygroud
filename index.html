@@ -56,6 +56,60 @@
             opacity: 0.9;
         }
 
+        /* MINI MANUAL DE INSTRUÇÕES */
+        .manual-card {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-left: 5px solid var(--primary);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        }
+
+        .manual-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .manual-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+
+        .manual-step-item {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-dark);
+            line-height: 1.4;
+        }
+
+        .manual-step-num {
+            font-weight: 700;
+            color: var(--primary);
+            margin-right: 4px;
+        }
+
+        .manual-link {
+            color: #0284c7;
+            font-weight: 600;
+            text-decoration: underline;
+            word-break: break-all;
+        }
+
+        .manual-link:hover {
+            color: var(--primary);
+        }
+
         .print-component-banner {
             display: none;
             background-color: #e0f2fe;
@@ -245,13 +299,12 @@
             border-color: #fde68a;
         }
 
-        /* CAIXA DE COMPONENTES EMPILHADOS VERTICALMENTE */
         .components-chips-container {
             display: flex;
             flex-direction: column;
             gap: 6px;
             margin-top: 8px;
-            max-height: 195px; /* Exibe ~5 itens visíveis antes da rolagem */
+            max-height: 195px;
             overflow-y: auto;
             padding: 6px;
             border: 1px solid var(--border);
@@ -474,7 +527,7 @@
                 background: white;
                 color: black;
             }
-            .upload-section, .panel-card, .actions-bar, header, .kpi-grid {
+            .upload-section, .panel-card, .actions-bar, header, .kpi-grid, .manual-card {
                 display: none !important;
             }
             .print-component-banner {
@@ -547,6 +600,28 @@
         <h1>Painel Dinâmico do Professor - Relatórios do Wayground</h1>
         <p>Importe arquivos Excel (.xlsx) ou CSV, selecione os componentes e acompanhe as notas consolidadas da turma.</p>
     </header>
+
+    <!-- MINI MANUAL DE INSTRUÇÕES -->
+    <div class="manual-card">
+        <div class="manual-title">
+            📖 Mini Manual de Instruções
+        </div>
+        <div class="manual-steps">
+            <div class="manual-step-item">
+                <span class="manual-step-num">1.</span> <strong>Baixar o Relatório:</strong> Faça o download da planilha oficial do Wayground no link: <br>
+                <a href="https://wayground.com/brazil-parana-reports" target="_blank" class="manual-link">wayground.com/brazil-parana-reports</a>
+            </div>
+            <div class="manual-step-item">
+                <span class="manual-step-num">2.</span> <strong>Importar o Arquivo:</strong> Arraste ou selecione o arquivo baixado (<code>.xlsx</code> ou <code>.csv</code>) na área de upload abaixo.
+            </div>
+            <div class="manual-step-item">
+                <span class="manual-step-num">3.</span> <strong>Ajustar Componentes:</strong> Marque os componentes desejados. O sistema calcula a <strong>média automática</strong> ao selecionar múltiplos itens.
+            </div>
+            <div class="manual-step-item">
+                <span class="manual-step-num">4.</span> <strong>Exportar ou Imprimir:</strong> Defina o peso da nota e gere seu relatório final em PDF ou baixe o CSV consolidado.
+            </div>
+        </div>
+    </div>
 
     <div class="print-component-banner" id="printHeader">
         <div class="print-title">Relatório Consolidado do Wayground</div>
