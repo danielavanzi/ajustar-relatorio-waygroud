@@ -204,6 +204,13 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.03);
         }
 
+        /* Estilo para o bloco de destaque da Base para Cálculo */
+        .panel-card.highlight-panel {
+            background: #f0f9ff;
+            border: 2px solid #0284c7;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.08);
+        }
+
         .panel-header {
             display: flex;
             justify-content: space-between;
@@ -222,6 +229,58 @@
             display: flex;
             align-items: center;
             gap: 6px;
+        }
+
+        /* Cartões de seleção da Base para Cálculo */
+        .calc-base-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .calc-base-card {
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 14px 16px;
+            background: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            user-select: none;
+        }
+
+        .calc-base-card:hover {
+            border-color: #0284c7;
+            background: #f8fafc;
+        }
+
+        .calc-base-card.active {
+            border-color: #0284c7;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        }
+
+        .calc-base-card input[type="radio"] {
+            margin-top: 3px;
+            accent-color: #0284c7;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .calc-base-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .calc-base-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
         }
 
         .badge-optional {
@@ -642,39 +701,40 @@
         <div class="file-info" id="fileInfo">Nenhum arquivo carregado ainda.</div>
     </div>
 
-    <div class="panel-card">
-        <div class="panel-header">
-            <div class="panel-title">
-                📝 Informações do Relatório
-                <span class="badge-optional">ℹ️ Campos Opcionais</span>
+    <!-- BLOCO EM DESTAQUE: BASE PARA CÁLCULO DA NOTA -->
+    <div class="panel-card highlight-panel">
+        <div class="panel-header" style="border-bottom-color: #bae6fd;">
+            <div class="panel-title" style="color: #0369a1;">
+                🎯 Base para Cálculo da Nota Final
             </div>
         </div>
-        <div class="form-grid">
-            <div class="control-group">
-                <label for="inputSerie">Série / Turma</label>
-                <input type="text" id="inputSerie" placeholder="Ex: 2º Ano A" oninput="applyFiltersAndSort()">
-            </div>
+        <div class="calc-base-container">
+            <label class="calc-base-card active" id="cardBaseNota">
+                <input type="radio" name="calcBase" value="nota" checked onchange="handleCalcBaseChange()">
+                <div>
+                    <div class="calc-base-title">Nota Geral (Todas as Atividades)</div>
+                    <div class="calc-base-desc">
+                        Utiliza a pontuação oficial do Wayground (escala de 0 a 3,0). <strong>Considera todas as atividades</strong> da disciplina, penalizando atividades não resolvidas pelo estudante.
+                    </div>
+                </div>
+            </label>
 
-            <div class="control-group">
-                <label for="inputDisciplinaCustom">Disciplina / Assunto</label>
-                <input type="text" id="inputDisciplinaCustom" placeholder="Ex: Matemática" oninput="applyFiltersAndSort()">
-            </div>
-
-            <div class="control-group" style="grid-column: span 2;">
-                <label for="inputObs">Observações (Aparece na impressão)</label>
-                <input type="text" id="inputObs" placeholder="Ex: Avaliação referente ao 1º Trimestre" oninput="applyFiltersAndSort()">
-            </div>
+            <label class="calc-base-card" id="cardBaseMedia">
+                <input type="radio" name="calcBase" value="media" onchange="handleCalcBaseChange()">
+                <div>
+                    <div class="calc-base-title">Média de Acertos (Apenas Realizadas)</div>
+                    <div class="calc-base-desc">
+                        Leva em consideração <strong>apenas as atividades que o jogador efetivamente resolveu</strong>, calculando o percentual de acerto sobre as tentativas efetuadas.
+                    </div>
+                </div>
+            </label>
         </div>
     </div>
 
     <div class="panel-card">
         <div class="panel-header">
-            <div class="panel-title">🎯 Componentes e Regras de Cálculo</div>
+            <div class="panel-title">📚 Componentes e Filtros</div>
             <button class="btn btn-secondary btn-small" onclick="toggleSelectAllComponents()" id="btnToggleComponents">Marcar / Desmarcar Todos</button>
-        </div>
-
-        <div class="instructions-box">
-            💡 <strong>Como funciona:</strong> Selecione os componentes desejados e escolha qual coluna servirá de base para a Nota Final.
         </div>
 
         <div style="margin-bottom: 16px;">
@@ -693,14 +753,6 @@
         </div>
 
         <div class="form-grid">
-            <div class="control-group">
-                <label for="selectCalcBase">Base para Cálculo da Nota</label>
-                <select id="selectCalcBase" onchange="applyFiltersAndSort()">
-                    <option value="nota">Nota (considera todas as atividades, incl. não feitas)</option>
-                    <option value="media">Média de Acertos (considera apenas atividades realizadas)</option>
-                </select>
-            </div>
-
             <div class="control-group">
                 <label for="inputMaxGrade">Nota Máxima (Peso)</label>
                 <input type="number" id="inputMaxGrade" value="10.0" step="0.5" min="0" max="100" oninput="applyFiltersAndSort()">
@@ -726,6 +778,31 @@
                     <option value="asc">Crescente (A-Z / Menor para Maior)</option>
                     <option value="desc">Decrescente (Z-A / Maior para Menor)</option>
                 </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-card">
+        <div class="panel-header">
+            <div class="panel-title">
+                📝 Informações do Relatório
+                <span class="badge-optional">ℹ️ Campos Opcionais</span>
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="control-group">
+                <label for="inputSerie">Série / Turma</label>
+                <input type="text" id="inputSerie" placeholder="Ex: 2º Ano A" oninput="applyFiltersAndSort()">
+            </div>
+
+            <div class="control-group">
+                <label for="inputDisciplinaCustom">Disciplina / Assunto</label>
+                <input type="text" id="inputDisciplinaCustom" placeholder="Ex: Matemática" oninput="applyFiltersAndSort()">
+            </div>
+
+            <div class="control-group" style="grid-column: span 2;">
+                <label for="inputObs">Observações (Aparece na impressão)</label>
+                <input type="text" id="inputObs" placeholder="Ex: Avaliação referente ao 1º Trimestre" oninput="applyFiltersAndSort()">
             </div>
         </div>
     </div>
@@ -801,6 +878,18 @@
             handleFileSelect();
         }
     });
+
+    function getSelectedCalcBase() {
+        const selected = document.querySelector('input[name="calcBase"]:checked');
+        return selected ? selected.value : 'nota';
+    }
+
+    function handleCalcBaseChange() {
+        const val = getSelectedCalcBase();
+        document.getElementById('cardBaseNota').classList.toggle('active', val === 'nota');
+        document.getElementById('cardBaseMedia').classList.toggle('active', val === 'media');
+        applyFiltersAndSort();
+    }
 
     function handleFileSelect() {
         const file = fileInput.files[0];
@@ -970,7 +1059,7 @@
         const rawMaxGradeStr = document.getElementById('inputMaxGrade').value.trim();
         const maxGrade = parseFloat(rawMaxGradeStr) || 0;
         const searchVal = document.getElementById('inputSearch').value.toLowerCase().trim();
-        const calcBase = document.getElementById('selectCalcBase').value;
+        const calcBase = getSelectedCalcBase();
 
         const serieVal = document.getElementById('inputSerie').value.trim();
         const customDiscVal = document.getElementById('inputDisciplinaCustom').value.trim();
@@ -1046,7 +1135,6 @@
             st.media = count > 0 ? (sumMedia / count) : 0;
             st.nota_orig = count > 0 ? (sumNota / count) : 0;
             
-            // Seleção dinâmica da base de cálculo
             if (calcBase === 'media') {
                 st.real_pct = st.media;
                 st.nota_calc = st.media * maxGrade;
@@ -1079,7 +1167,7 @@
         const thead = document.getElementById('tableHeader');
         const tbody = document.getElementById('tableBody');
         const noData = document.getElementById('noDataMsg');
-        const calcBase = document.getElementById('selectCalcBase').value;
+        const calcBase = getSelectedCalcBase();
         
         tbody.innerHTML = '';
         thead.innerHTML = '';
@@ -1154,7 +1242,7 @@
 
         const maxGrade = parseFloat(document.getElementById('inputMaxGrade').value) || 0;
         const searchVal = document.getElementById('inputSearch').value.toLowerCase().trim();
-        const calcBase = document.getElementById('selectCalcBase').value;
+        const calcBase = getSelectedCalcBase();
 
         let filteredRaw = rawData.filter(item => {
             const matchComp = selectedComponents.includes(item.componente);
