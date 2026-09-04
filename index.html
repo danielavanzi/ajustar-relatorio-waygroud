@@ -710,7 +710,7 @@
                 <select id="selectSortColumn" onchange="applyFiltersAndSort()">
                     <option value="nome">Nome do Jogador</option>
                     <option value="email">Email do Jogador</option>
-                    <option value="media">Média de Acerto (%) / Nota Final</option>
+                    <option value="nota_calc">Aproveitamento Geral (%) / Nota Final</option>
                 </select>
             </div>
 
@@ -730,7 +730,7 @@
             <div class="val" id="kpiCount">0</div>
         </div>
         <div class="kpi-card">
-            <div class="lbl">Média de Acerto da Turma</div>
+            <div class="lbl">Rendimento Médio da Turma</div>
             <div class="val" id="kpiAvgPct">0.0%</div>
         </div>
         <div class="kpi-card">
@@ -738,7 +738,7 @@
             <div class="val" id="kpiAvgScore">0.00</div>
         </div>
         <div class="kpi-card">
-            <div class="lbl">Alunos com Acerto ≥ 80%</div>
+            <div class="lbl">Alunos com Rendimento ≥ 80%</div>
             <div class="val" id="kpiPassPct">0.0%</div>
         </div>
     </div>
@@ -1015,25 +1015,32 @@
                 studentMap.set(key, {
                     email: item.email || "-",
                     nome: item.nome || "-",
-                    scores: {}
+                    scores: {},
+                    notas: {}
                 });
             }
             const st = studentMap.get(key);
             st.scores[item.componente] = item.media;
+            st.notas[item.componente] = item.nota_orig;
         });
 
         let studentList = [];
         studentMap.forEach(st => {
-            let sum = 0;
+            let sumMedia = 0;
+            let sumNota = 0;
             let count = 0;
             selectedComponents.forEach(c => {
-                if (st.scores[c] !== undefined) {
-                    sum += st.scores[c];
+                if (st.scores[c] !== undefined || st.notas[c] !== undefined) {
+                    sumMedia += st.scores[c] || 0;
+                    sumNota += st.notas[c] || 0;
                     count++;
                 }
             });
-            st.media = count > 0 ? (sum / count) : 0;
-            st.nota_calc = st.media * maxGrade;
+            st.media = count > 0 ? (sumMedia / count) : 0;
+            st.nota_orig = count > 0 ? (sumNota / count) : 0;
+            
+            // Ajuste: cálculo proporcional da nota final baseado na coluna "Nota" (máximo 3.0 no Wayground)
+            st.nota_calc = (st.nota_orig / 3.0) * maxGrade;
             studentList.push(st);
         });
 
@@ -1080,8 +1087,8 @@
         trHeader.innerHTML = `
             <th onclick="setSortFromHeader('email')" id="th-email">Email do Jogador <span class="sort-icon">↕</span></th>
             <th onclick="setSortFromHeader('nome')" id="th-nome">Nome do Jogador <span class="sort-icon">↕</span></th>
-            <th style="text-align: right;" onclick="setSortFromHeader('media')" id="th-media">Média de Acerto (%) <span class="sort-icon">↕</span></th>
-            <th style="text-align: right;" onclick="setSortFromHeader('media')" id="th-nota_calc">Nota Calculada (${formattedMaxGrade}) <span class="sort-icon">↕</span></th>
+            <th style="text-align: right;" onclick="setSortFromHeader('nota_calc')" id="th-nota_calc_pct">Aproveitamento Geral (%) <span class="sort-icon">↕</span></th>
+            <th style="text-align: right;" onclick="setSortFromHeader('nota_calc')" id="th-nota_calc">Nota Calculada (${formattedMaxGrade}) <span class="sort-icon">↕</span></th>
         `;
         thead.appendChild(trHeader);
 
@@ -1097,15 +1104,17 @@
         let highAchievers = 0;
 
         data.forEach(st => {
-            sumPct += st.media;
+            // Porcentagem de aproveitamento real (considerando atividades não realizadas)
+            const realPct = st.nota_orig / 3.0;
+            sumPct += realPct;
             sumScore += st.nota_calc;
-            if (st.media >= 0.8) highAchievers++;
+            if (realPct >= 0.8) highAchievers++;
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><span class="badge-email" title="${st.email}">${st.email}</span></td>
                 <td class="col-nome" title="${st.nome}">${st.nome}</td>
-                <td style="text-align: right; font-weight: 500;">${(st.media * 100).toFixed(1)}%</td>
+                <td style="text-align: right; font-weight: 500;">${(realPct * 100).toFixed(1)}%</td>
                 <td style="text-align: right;" class="grade-highlight">${st.nota_calc.toFixed(2)}</td>
             `;
             tbody.appendChild(tr);
@@ -1141,22 +1150,25 @@
         filteredRaw.forEach(item => {
             const key = item.email ? item.email.toLowerCase().trim() : item.nome.toLowerCase().trim();
             if (!studentMap.has(key)) {
-                studentMap.set(key, { email: item.email || "-", nome: item.nome || "-", scores: {} });
+                studentMap.set(key, { email: item.email || "-", nome: item.nome || "-", scores: {}, notas: {} });
             }
             studentMap.get(key).scores[item.componente] = item.media;
+            studentMap.get(key).notas[item.componente] = item.nota_orig;
         });
 
         let studentList = [];
         studentMap.forEach(st => {
-            let sum = 0, count = 0;
+            let sumMedia = 0, sumNota = 0, count = 0;
             selectedComponents.forEach(c => {
-                if (st.scores[c] !== undefined) {
-                    sum += st.scores[c];
+                if (st.scores[c] !== undefined || st.notas[c] !== undefined) {
+                    sumMedia += st.scores[c] || 0;
+                    sumNota += st.notas[c] || 0;
                     count++;
                 }
             });
-            st.media = count > 0 ? (sum / count) : 0;
-            st.nota_calc = st.media * maxGrade;
+            st.media = count > 0 ? (sumMedia / count) : 0;
+            st.nota_orig = count > 0 ? (sumNota / count) : 0;
+            st.nota_calc = (st.nota_orig / 3.0) * maxGrade;
             studentList.push(st);
         });
 
@@ -1173,10 +1185,10 @@
         });
 
         let csvContent = "\uFEFF";
-        csvContent += "Email do Jogador,Nome do Jogador,Média de Acerto (%),Nota Calculada\n";
+        csvContent += "Email do Jogador,Nome do Jogador,Aproveitamento Geral (%),Nota Calculada\n";
         studentList.forEach(st => {
             const calcGrade = st.nota_calc.toFixed(2);
-            const mediaPct = (st.media * 100).toFixed(1) + "%";
+            const mediaPct = ((st.nota_orig / 3.0) * 100).toFixed(1) + "%";
             csvContent += `"${st.email}","${st.nome}","${mediaPct}",${calcGrade}\n`;
         });
 
